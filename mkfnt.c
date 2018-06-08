@@ -74,7 +74,7 @@ main(int argc, char **argv)
 
 	if (load(argc, argv))
 		return free(font), 1;
-	
+
 	if (!total_glyphs)
 		return fprintf(stderr, "short file\n"), 1;
 

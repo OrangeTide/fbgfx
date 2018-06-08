@@ -137,7 +137,7 @@ gfx_close(void)
 int
 gfx_open(unsigned *xres, unsigned *yres, size_t *rowbytes)
 {
-	fb_dev = getenv("FBDEV") ? : "/dev/fb0";	
+	fb_dev = getenv("FBDEV") ? : "/dev/fb0";
 
 	if (fb_fd != -1)
 		return -1;

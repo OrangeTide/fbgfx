@@ -119,7 +119,6 @@ static int readloadavg(float *avg1, float *avg5, float *avg15)
 	return 0;
 }
 
-
 static void drawload(int xpos, int ypos, int width, int height)
 {
 	if (user_hz < 0)
