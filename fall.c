@@ -363,11 +363,9 @@ pal_init(void)
 }
 
 void
-demo16(void)
+random_text(void)
 {
 	gfx_color_t fg, bg;
-	unsigned i;
-	unsigned short r;
 	unsigned short x, y;
 
 	/* fill the screen with random letters of random color */
@@ -380,6 +378,35 @@ demo16(void)
 			gfx_draw_glyph(x, y, fg, bg, ch);
 		}
 	}
+}
+
+void
+iso_maze(void)
+{
+	gfx_color_t fg, bg;
+	unsigned i;
+	unsigned short r;
+	unsigned short x, y;
+
+	fg = pal16[0];
+	bg = pal16[7];
+	for (y = 0; y <= yres - font_h; y += 8) {
+		for (x = 0; x <= xres - font_w; x += 8) {
+
+			gfx_draw_glyph(x, y, fg, bg, rand() % 2 ? '\\' : '/');
+		}
+	}
+}
+
+void
+demo16(void)
+{
+	gfx_color_t fg, bg;
+	unsigned i;
+	unsigned short r;
+	unsigned short x, y;
+
+	iso_maze();
 
 	/* draw some lines on top of a black circle */
 	filledcircle16(xres / 2, yres / 2, MAX(xres, yres) / 5, pal16[0]);
@@ -409,7 +436,6 @@ demo16(void)
 	filledcircle16(r, r, r, pal16[9]);
 	circle16(xres / 2, yres / 2, r, pal16[14]);
 }
-
 /******************************************************************************/
 
 int
@@ -432,6 +458,7 @@ main()
 	gfx_clear(pixels, pixels_len);
 
 	pal_init();
+
 	demo16();
 
 	gfx_close();
