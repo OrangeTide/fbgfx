@@ -17,7 +17,8 @@ static void
 header(void)
 {
 	printf("static const unsigned font_w = %u, font_h = %u;\n", font_w, font_h);
-	printf("static const unsigned char font_base = %#x;\n", font_base);
+	printf("static const unsigned char font_base = %#x, font_glyphs = %d;\n",
+			font_base, total_glyphs);
 	printf("static const unsigned char font[%u * %u] = {\n",
 		       	total_glyphs, (int)glyphbytes());
 }
