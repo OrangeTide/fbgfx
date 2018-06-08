@@ -259,6 +259,59 @@ filledcircle16(unsigned short x, unsigned short y, unsigned short r, gfx_color_t
 	}
 }
 
+/* fast line.
+ * TODO: test for correctness.
+ * TODO: benchmark.
+ */
+static void
+line16(unsigned short x0, unsigned short y0, unsigned short x1, unsigned short y1, gfx_color_t c)
+{
+	int maj = x1 - x0, minor = y1 - y0;
+	int ymajor;
+	int32_t delta;
+	unsigned j;
+	unsigned short x = x0, y = y0;
+
+	ymajor = abs(maj) < abs(minor);
+	if (ymajor) {
+		unsigned tmp = maj;
+		maj = minor;
+		minor = tmp;
+	}
+
+	if (maj)
+		delta = (minor << 16) / maj;
+	else
+		delta = 0;
+
+	if (ymajor) {
+		if (maj > 0) {
+			for (j = 0x8000 + ((unsigned)x << 16); y <= maj; y++) {
+				putpixel16(j >> 16, y, c);
+				j += delta;
+			}
+		} else {
+			for (j = 0x8000 + ((unsigned)x << 16); y >= maj; y--) {
+				putpixel16(j >> 16, y, c);
+				j -= delta;
+			}
+		}
+	} else {
+		maj += x;
+		if (maj > 0) {
+			for (j = 0x8000 + ((unsigned)y << 16); x <= maj; x++) {
+				putpixel16(x, j >> 16, c);
+				j += delta;
+			}
+		} else {
+			for (j = 0x8000 + ((unsigned)y << 16); x >= maj; x--) {
+				putpixel16(x, j >> 16, c);
+				j -= delta;
+			}
+		}
+	}
+}
+
 /******************************************************************************/
 
 void (*gfx_draw_glyph)(unsigned short x, unsigned short y, gfx_color_t fg, gfx_color_t bg, uint8_t ch);
@@ -328,6 +381,13 @@ demo16(void)
 		}
 	}
 
+	/* draw some lines on top of a black circle */
+	filledcircle16(xres / 2, yres / 2, MAX(xres, yres) / 5, pal16[0]);
+	for (i = 1; i < 15; i++) {
+		line16(xres / 3, yres / 3, xres - xres / 3 - i * 3, yres - yres / 3, pal16[i]);
+		line16(xres / 3, yres / 3, xres - xres / 3, yres - yres / 3 - i * 2, pal16[i]);
+	}
+
 	/* draw a red triangle thing */
 	r = xres / 4;
 	for (i = 0; i < r; i++) {
@@ -344,6 +404,7 @@ demo16(void)
 	glyph16(x, y + font_h, fg, bg, 'C');
 	glyph16(x + font_w, y + font_h, fg, bg, 'D');
 
+	/* draw a blue circle in the upper left corner */
 	r = MIN(xres, yres) / 5;
 	filledcircle16(r, r, r, pal16[9]);
 	circle16(xres / 2, yres / 2, r, pal16[14]);
