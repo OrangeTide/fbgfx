@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <time.h>
+#include <math.h>
+#include <unistd.h>
 #include "gfx.h"
 
 /******************************************************************************/
@@ -262,6 +264,7 @@ filledcircle16(unsigned short x, unsigned short y, unsigned short r, gfx_color_t
 /* fast line.
  * TODO: test for correctness.
  * TODO: benchmark.
+ * TODO: has a bug if (x0, y0) > (x1, y1)
  */
 static void
 line16(unsigned short x0, unsigned short y0, unsigned short x1, unsigned short y1, gfx_color_t c)
@@ -384,8 +387,6 @@ void
 iso_maze(void)
 {
 	gfx_color_t fg, bg;
-	unsigned i;
-	unsigned short r;
 	unsigned short x, y;
 
 	fg = pal16[0];
@@ -415,6 +416,14 @@ demo16(void)
 		line16(xres / 3, yres / 3, xres - xres / 3, yres - yres / 3 - i * 2, pal16[i]);
 	}
 
+#if 0 // BUG: this segfaults
+	/* draw a fan in the corner */
+	for (i = 1; i < 15; i++) {
+		line16(xres - 1, yres - 1, xres - 11 - i, yres - 1, pal16[15]);
+		line16(xres - 1, yres - 1, xres - 1, yres - 11 - i, pal16[15]);
+	}
+#endif
+
 	/* draw a red triangle thing */
 	r = xres / 4;
 	for (i = 0; i < r; i++) {
@@ -436,10 +445,47 @@ demo16(void)
 	filledcircle16(r, r, r, pal16[9]);
 	circle16(xres / 2, yres / 2, r, pal16[14]);
 }
+
+/******************************************************************************/
+
+void
+clock16(void)
+{
+	float theta;
+	time_t now;
+	struct tm tm;
+	int ox, oy, cx, cy;
+	int r;
+
+	ox = xres / 2;
+	oy = yres / 2;
+
+	r = MIN(xres, yres) / 2;
+
+	while (1) {
+		time(&now);
+		tm = *localtime(&now);
+
+		gfx_clear(pixels, pixels_len);
+
+		theta = 2 * M_PI * ((tm.tm_sec - 15)/ 60.);
+
+		cx = ox + r * cos(theta);
+		cy = oy + r * sin(theta);
+
+		line16(ox, oy, cx, cy, pal16[15]);
+
+		// TODO: draw the minute hand
+		// TODO: draw the second hand
+
+		sleep(1);
+	}
+}
+
 /******************************************************************************/
 
 int
-main()
+main(int argc, char **argv)
 {
 	srand(time(0));
 
@@ -459,9 +505,17 @@ main()
 
 	pal_init();
 
-	demo16();
+	if (argc == 1)
+		demo16();
+	else if (argv[1][0] == 'c')
+		clock16();
+	else
+		goto failure;
 
 	gfx_close();
 
 	return 0;
+failure:
+	gfx_close();
+	return 1;
 }
