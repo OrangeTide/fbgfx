@@ -1,4 +1,5 @@
 #include <stddef.h>
+#include <stdio.h>
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -269,15 +270,31 @@ filledcircle16(unsigned short x, unsigned short y, unsigned short r, gfx_color_t
 static void
 line16(unsigned short x0, unsigned short y0, unsigned short x1, unsigned short y1, gfx_color_t c)
 {
-	int maj = x1 - x0, minor = y1 - y0;
+	int maj, minor;
 	int ymajor;
 	int32_t delta;
 	unsigned j;
-	unsigned short x = x0, y = y0;
+	unsigned short x, y;
+
+	// HACK to swap (x0, y0) and (x1, y1)
+	if (0) {
+		unsigned short t;
+		t = x0;
+		x0 = x1;
+		x1 = t;
+		t = y0;
+		y0 = y1;
+		y1 = t;
+	}
+
+	maj = (int)x1 - (int)x0;
+	minor = (int)y1 - (int)y0;
+	x = x0;
+	y = y0;
 
 	ymajor = abs(maj) < abs(minor);
 	if (ymajor) {
-		unsigned tmp = maj;
+		int tmp = maj;
 		maj = minor;
 		minor = tmp;
 	}
@@ -289,26 +306,29 @@ line16(unsigned short x0, unsigned short y0, unsigned short x1, unsigned short y
 
 	if (ymajor) {
 		if (maj > 0) {
+			maj += y;
 			for (j = 0x8000 + ((unsigned)x << 16); y <= maj; y++) {
 				putpixel16(j >> 16, y, c);
 				j += delta;
 			}
 		} else {
+			maj += y;
 			for (j = 0x8000 + ((unsigned)x << 16); y >= maj; y--) {
-				putpixel16(j >> 16, y, c);
+				putpixel16(j >> 16, y, c /* gfx_rgb(0,0,255) */);
 				j -= delta;
 			}
 		}
 	} else {
-		maj += x;
 		if (maj > 0) {
+			maj += x;
 			for (j = 0x8000 + ((unsigned)y << 16); x <= maj; x++) {
-				putpixel16(x, j >> 16, c);
+				putpixel16(x, j >> 16, c /* gfx_rgb(0,255,0) */);
 				j += delta;
 			}
 		} else {
+			maj += x;
 			for (j = 0x8000 + ((unsigned)y << 16); x >= maj; x--) {
-				putpixel16(x, j >> 16, c);
+				putpixel16(x, j >> 16, c /* gfx_rgb(255,0, 0) */);
 				j -= delta;
 			}
 		}
@@ -399,6 +419,7 @@ iso_maze(void)
 	}
 }
 
+/* demo of several draw commands */
 void
 demo16(void)
 {
@@ -412,17 +433,18 @@ demo16(void)
 	/* draw some lines on top of a black circle */
 	filledcircle16(xres / 2, yres / 2, MAX(xres, yres) / 5, pal16[0]);
 	for (i = 1; i < 15; i++) {
-		line16(xres / 3, yres / 3, xres - xres / 3 - i * 3, yres - yres / 3, pal16[i]);
-		line16(xres / 3, yres / 3, xres - xres / 3, yres - yres / 3 - i * 2, pal16[i]);
+		line16(xres / 3, yres / 3,
+			xres - xres / 3 - i * 3, yres - yres / 3, pal16[i]);
+		line16(xres / 3, yres / 3,
+			xres - xres / 3, yres - yres / 3 - i * 2, pal16[i]);
 	}
 
-#if 0 // BUG: this segfaults
 	/* draw a fan in the corner */
-	for (i = 1; i < 15; i++) {
-		line16(xres - 1, yres - 1, xres - 11 - i, yres - 1, pal16[15]);
-		line16(xres - 1, yres - 1, xres - 1, yres - 11 - i, pal16[15]);
+	r = MIN(yres, xres) / 3;
+	for (i = 1; i < r; i += 10) {
+		line16(xres - r, yres - r, xres - i, yres - 1, pal16[15]);
+		line16(xres - r, yres - r, xres - 1, yres - i, pal16[15]);
 	}
-#endif
 
 	/* draw a red triangle thing */
 	r = xres / 4;
@@ -446,8 +468,7 @@ demo16(void)
 	circle16(xres / 2, yres / 2, r, pal16[14]);
 }
 
-/******************************************************************************/
-
+/* an animated clock */
 void
 clock16(void)
 {
@@ -456,11 +477,12 @@ clock16(void)
 	struct tm tm;
 	int ox, oy, cx, cy;
 	int r;
+	int i;
 
 	ox = xres / 2;
 	oy = yres / 2;
 
-	r = MIN(xres, yres) / 2;
+	r = MIN(xres, yres) * 2 / 3 / 2;
 
 	while (1) {
 		time(&now);
@@ -468,18 +490,70 @@ clock16(void)
 
 		gfx_clear(pixels, pixels_len);
 
-		theta = 2 * M_PI * ((tm.tm_sec - 15)/ 60.);
+		/* draw jewels */
+		for (i = 0; i < 12; i++) {
+			theta = 2 * M_PI * ((i - 2) / 12.);
+			cx = round(r * cos(theta));
+			cy = round(r * sin(theta));
+			filledcircle16(ox + cx, oy + cy, r / 18,
+					i == 11 ? pal16[14] : pal16[3]);
+		}
 
-		cx = ox + r * cos(theta);
-		cy = oy + r * sin(theta);
+		/* second hand */
+		theta = 2 * M_PI * ((tm.tm_sec - 15) / 60.);
+		cx = round(r * cos(theta));
+		cy = round(r * sin(theta));
+		line16(ox, oy, ox + cx, oy + cy, pal16[15]);
 
-		line16(ox, oy, cx, cy, pal16[15]);
+		/* minute hand */
+		// TODO: draw a triangle
+		theta = 2 * M_PI * ((tm.tm_min - 15) / 60.);
+		cx = round(r * cos(theta));
+		cy = round(r * sin(theta));
+		line16(ox, oy, ox + cx, oy + cy, pal16[10]);
 
-		// TODO: draw the minute hand
-		// TODO: draw the second hand
+		/* hour hand */
+		// TODO: draw a triangle
+		theta = 2 * M_PI * (((tm.tm_hour % 12) - 2) / 12.);
+		cx = round(r / 2 * cos(theta));
+		cy = round(r / 2 * sin(theta));
+		line16(ox, oy, ox + cx, oy + cy, pal16[13]);
 
 		sleep(1);
 	}
+}
+
+/* draws a simple star pattern to test the line drawing function */
+void
+test16(void)
+{
+	unsigned short ox, oy;
+	unsigned short r;
+
+	ox = xres / 2;
+	oy = yres / 2;
+	r = MIN(xres, yres) / 4;
+
+	line16(ox, oy, ox - r, oy - r, pal16[15]); // top-left
+	line16(ox, oy, ox + r, oy - r, pal16[12]); // top-right
+	line16(ox, oy, ox - r, oy + r, pal16[10]); // bottom-left
+	line16(ox, oy, ox + r, oy + r, pal16[9]); // bottom-right
+
+	line16(ox, oy, ox - r / 2, oy - r, pal16[14]);
+	line16(ox, oy, ox + r / 2, oy - r, pal16[14]);
+	line16(ox, oy, ox, oy - r, pal16[13]);
+
+	line16(ox, oy, ox - r / 2, oy + r, pal16[14]);
+	line16(ox, oy, ox + r / 2, oy + r, pal16[14]);
+	line16(ox, oy, ox, oy + r, pal16[13]);
+
+	line16(ox, oy, ox - r, oy - r / 2, pal16[2]);
+	line16(ox, oy, ox - r, oy + r / 2, pal16[4]);
+	line16(ox, oy, ox - r, oy, pal16[1]);
+
+	line16(ox, oy, ox + r, oy + r / 2, pal16[2]);
+	line16(ox, oy, ox + r, oy - r / 2, pal16[4]);
+	line16(ox, oy, ox + r, oy, pal16[1]);
 }
 
 /******************************************************************************/
@@ -506,9 +580,13 @@ main(int argc, char **argv)
 	pal_init();
 
 	if (argc == 1)
+		printf("usage: %s [d|c|t]\n", argv[0]);
+	else if (argv[1][0] == 'd')
 		demo16();
 	else if (argv[1][0] == 'c')
 		clock16();
+	else if (argv[1][0] == 't')
+		test16();
 	else
 		goto failure;
 
