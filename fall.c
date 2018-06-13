@@ -385,7 +385,22 @@ pal_init(void)
 	pal16[15] = gfx_rgb(255,255,255);
 }
 
-void
+static void
+draw_string(unsigned short x, unsigned short y, gfx_color_t fg, gfx_color_t bg, const char *s)
+{
+	unsigned short i;
+
+	
+	for (i = x; *s; i += font_w) {
+		if (i > xres) {
+			y += font_h;
+			i = x;	
+		}
+		gfx_draw_glyph(i, y, fg, bg, *s++);
+	}
+}
+
+static void
 random_text(void)
 {
 	gfx_color_t fg, bg;
@@ -478,6 +493,7 @@ clock16(void)
 	int ox, oy, cx, cy;
 	int r;
 	int i;
+	char date[40];
 
 	ox = xres / 2;
 	oy = yres / 2;
@@ -490,31 +506,34 @@ clock16(void)
 
 		gfx_clear(pixels, pixels_len);
 
+		strftime(date, sizeof(date), "%Y.%m.%d", &tm);
+		draw_string(0, 0, pal16[8], pal16[15], date);
+
 		/* draw jewels */
 		for (i = 0; i < 12; i++) {
-			theta = 2 * M_PI * ((i - 2) / 12.);
+			theta = 2 * M_PI * (i / 12.) - M_PI / 2;
 			cx = round(r * cos(theta));
 			cy = round(r * sin(theta));
 			filledcircle16(ox + cx, oy + cy, r / 18,
-					i == 11 ? pal16[14] : pal16[3]);
+					i == 0 ? pal16[14] : pal16[3]);
 		}
 
 		/* second hand */
-		theta = 2 * M_PI * ((tm.tm_sec - 15) / 60.);
+		theta = 2 * M_PI * (tm.tm_sec / 60.) - M_PI / 2;
 		cx = round(r * cos(theta));
 		cy = round(r * sin(theta));
 		line16(ox, oy, ox + cx, oy + cy, pal16[15]);
 
 		/* minute hand */
 		// TODO: draw a triangle
-		theta = 2 * M_PI * ((tm.tm_min - 15) / 60.);
+		theta = 2 * M_PI * (tm.tm_min / 60.) - M_PI / 2;
 		cx = round(r * cos(theta));
 		cy = round(r * sin(theta));
 		line16(ox, oy, ox + cx, oy + cy, pal16[10]);
 
 		/* hour hand */
 		// TODO: draw a triangle
-		theta = 2 * M_PI * (((tm.tm_hour % 12) - 2) / 12.);
+		theta = 2 * M_PI * ((tm.tm_hour % 12) / 12.) - M_PI / 2;
 		cx = round(r / 2 * cos(theta));
 		cy = round(r / 2 * sin(theta));
 		line16(ox, oy, ox + cx, oy + cy, pal16[13]);
