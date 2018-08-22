@@ -533,7 +533,9 @@ clock16(void)
 
 		/* hour hand */
 		// TODO: draw a triangle
-		theta = 2 * M_PI * ((tm.tm_hour % 12) / 12.) - M_PI / 2;
+		// HOUR only: theta = 2 * M_PI * ((tm.tm_hour % 12) / 12.) - M_PI / 2;
+		/* add in minute's contribution to a fraction of an hour */
+		theta = 2 * M_PI * ((tm.tm_hour % 12) / 12. + (tm.tm_min / 720.)) - M_PI / 2;
 		cx = round(r / 2 * cos(theta));
 		cy = round(r / 2 * sin(theta));
 		line16(ox, oy, ox + cx, oy + cy, pal16[13]);
