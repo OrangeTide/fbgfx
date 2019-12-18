@@ -153,7 +153,7 @@ glyph16(unsigned short x, unsigned short y, gfx_color_t fg, gfx_color_t bg, uint
 	/* expand 2 bits into 2 16-bit pixels */
 	static const uint32_t tab[4] = {
 		0x00000000, 0xffff0000, 0x0000ffff, 0xffffffff,
-       	};
+	};
 	const uint8_t *c = font + font_h * ((font_w + 7) / 8) * (ch - font_base);
 	unsigned w = font_w, h = font_h;
 	uint32_t fgx, bgx, eorx;

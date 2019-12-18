@@ -1,0 +1,12 @@
+[Service]
+ExecStart=/usr/local/bin/fall c
+Restart=always
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=fall
+User=nobody
+Group=video
+Environment=FBDEV=/dev/fb1
+
+[Install]
+WantedBy=multi-user.target
